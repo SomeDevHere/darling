@@ -18,6 +18,10 @@
 #	define PATH_MAX	4096
 #endif
 
+#if defined(__ANDROID__)
+#define ELF64_ST_VISIBILITY(val) ((val)&0x3)
+#endif
+
 // This is a generator of assembly code for Mach-O
 // libraries wrapping ELF libraries.
 
@@ -54,7 +58,11 @@ int main(int argc, const char** argv)
 			// It is simpler than parsing /etc/ld.so.conf.
 
 			void* handle = dlopen(elfLibrary.c_str(), RTLD_LAZY | RTLD_LOCAL);
+#if defined(__ANDROID__)
+			Dl_info lm;
+#else
 			struct link_map* lm = NULL;
+#endif /* __ANDROID__ */
 
 			if (!handle)
 			{
@@ -62,7 +70,44 @@ int main(int argc, const char** argv)
 				ss << "Cannot load " << elfLibrary << ": " << dlerror();
 				throw std::runtime_error(ss.str());
 			}
-
+#if defined(__ANDROID__)
+			//On Android, dlinfo does not exist, so instead read /proc/self/maps to get path
+			std::ifstream maps("/proc/self/maps");
+			std::string lib_path=""; // Sometimes the library is a symlink to the real library which is verioned
+			if (elfLibrary == "libpng.so") {
+				elfLibrary = "libpng"; //libpng is a symlink to libpng16.so
+			}
+			for (std::string map; std::getline(maps, map);) {
+				std::string search_lib;
+				if (map.size() >= 3 && map.rfind(".so") != std::string::npos && map.rfind(".so") > map.rfind(" ")) {
+					size_t path_start = 0;
+					for (int i = 0; i < 5; i++) {
+						path_start = map.find(" ", path_start) + 1;
+					}
+					search_lib = map.substr(path_start);
+					search_lib.erase(0, search_lib.find_first_not_of(" "));
+					if (search_lib.find(elfLibrary) != std::string::npos) {
+						if (search_lib.size() >= elfLibrary.size() && search_lib.compare(search_lib.size() - elfLibrary.size(), elfLibrary.size(), elfLibrary) == 0) {
+							elfLibrary = search_lib; // Exact match, do not continue searching
+							break;
+						}
+						lib_path = search_lib;
+					}
+				}
+			}
+			if(maps.eof()) {
+				if (lib_path.size()) {
+					elfLibrary = lib_path;
+				} else {
+					if (elfLibrary == "libpng") {
+						elfLibrary = "libpng.so";
+					}
+					std::stringstream ss;
+					std::cerr << "Cannot locate " << elfLibrary;
+					throw std::runtime_error(ss.str());
+				}
+			}
+#else
 			if (dlinfo(handle, RTLD_DI_LINKMAP, &lm) == 0)
 			{
 				elfLibrary = lm->l_name;
@@ -73,6 +118,7 @@ int main(int argc, const char** argv)
 				std::cerr << "Cannot locate " << elfLibrary << ": " << dlerror();
 				throw std::runtime_error(ss.str());
 			}
+#endif /* __ANDROID__ */
 
 			dlclose(handle);
 		}

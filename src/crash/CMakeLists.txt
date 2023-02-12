@@ -1,4 +1,5 @@
 project(crash)
+include(darling_host_exe)
 
 cmake_minimum_required(VERSION 3.10)
 if(COMMAND cmake_policy)
@@ -18,7 +19,7 @@ set(crash_SRCS
 	crash_main.m
 )
 
-add_executable(crash ${crash_SRCS})
+add_darling_host_executable(crash ${crash_SRCS})
 target_link_libraries(crash -lgnustep-base -lgnustep-gui ${GNUSTEP_OBJC_CFLAGS})
 
 install(TARGETS crash DESTINATION "libexec/darling/crash.app/")
