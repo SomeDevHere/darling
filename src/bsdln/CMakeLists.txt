@@ -1,6 +1,7 @@
 project(bsdln)
+include(darling_native_exe)
 
-add_executable(bsdln
+add_darling_native_executable(bsdln
 	ln.c
 )
 target_link_libraries(bsdln bsd)

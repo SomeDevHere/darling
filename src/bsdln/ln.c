@@ -55,6 +55,10 @@ static char sccsid[] = "@(#)ln.c	8.2 (Berkeley) 3/31/94";
 #include <string.h>
 #include <unistd.h>
 
+#if defined(__ANDROID__)
+#define rindex strrchr
+#endif
+
 int	fflag;				/* Unlink existing files. */
 int	Fflag;				/* Remove empty directories also. */
 int	hflag;				/* Check new name for symlink first. */

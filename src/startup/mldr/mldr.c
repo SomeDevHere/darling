@@ -43,6 +43,10 @@ along with Darling.  If not, see <http://www.gnu.org/licenses/>.
 #include <pthread.h>
 #include <sys/utsname.h>
 
+#if defined(__ANDROID__)
+#include <sys/syscall.h>
+#endif
+
 #ifndef PAGE_SIZE
 #	define PAGE_SIZE	4096
 #endif
@@ -344,7 +348,11 @@ static void load_fat(int fd, cpu_type_t forced_arch, bool expect_dylinker, char*
 
 	const bool swap = fhdr.magic == FAT_CIGAM;
 
+#if defined(__ANDROID__)
+#define SWAP32(x) x = __swap32(x)
+#else
 #define SWAP32(x) x = __bswap_32(x)
+#endif
 
 	if (swap)
 		SWAP32(fhdr.nfat_arch);
@@ -716,11 +724,19 @@ int __mldr_create_rpc_socket(void) {
 
 	// `fd` now contains the socket with the desired FD number returned by `socket_bitmap_get`
 
+#if defined(__ANDROID__)
+	int fd_flags = syscall(SYS_fcntl, fd, F_GETFD);
+#else
 	int fd_flags = fcntl(fd, F_GETFD);
+#endif
 	if (fd_flags < 0) {
 		goto err_out;
 	}
+#if defined(__ANDROID__)
+	if (syscall(SYS_fcntl, fd, F_SETFD, fd_flags | FD_CLOEXEC) < 0) {
+#else
 	if (fcntl(fd, F_SETFD, fd_flags | FD_CLOEXEC) < 0) {
+#endif
 		goto err_out;
 	}
 
@@ -746,7 +762,12 @@ err_out:
 };
 
 void __mldr_close_rpc_socket(int socket) {
+//Address a segfault within the Android libc regarding fdsan
+#if defined(__ANDROID__)
+	syscall(SYS_close, socket);
+#else
 	close(socket);
+#endif
 	socket_bitmap_put(&socket_bitmap, socket);
 };
 
