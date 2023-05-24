@@ -61,11 +61,14 @@ int main(int argc, char ** argv)
 		return 1;
 	}
 
+	//geteuid may not work properly in the Android bionic libc
+#if !defined(__ANDROID__)
 	if (geteuid() != 0)
 	{
 		missingSetuidRoot();
 		return 1;
 	}
+#endif
 
 	g_originalUid = getuid();
 	g_originalGid = getgid();

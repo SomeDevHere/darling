@@ -1,0 +1,65 @@
+# Build Instructions for Android x86
+
+# Kernel Requirements
+Android 11 or higher with a kernel version 5.3 or higher is required.
+Currently, Darling requires features which are not available in a stock Android kernel.
+For the Android-x86 11 branch append to the kernel configs:
+```
+CONFIG_SYSVIPC=y
+CONFIG_POSIX_MQUEUE=y
+CONFIG_UTS_NS=y
+CONFIG_PID_NS=y
+CONFIG_IPC_NS=y
+```
+
+# Dependencies
+First install Termux either from F-Droid or Github 
+
+The packages required using Termux can be installed through pkg:
+To get some of the packages first run:
+```
+pkg install root-repo x11-repo
+```
+```
+pkg install make cmake clang bison flex xz-utils libfuse2 pkg-config libcap git git-lfs python2 glu mesa libcairo libbsd libtiff freetype libxml2 fontconfig libxrandr libxcursor giflib pulseaudio ffmpeg dbus libxkbfile openssl libxkbcommon libicu xorgproto libxext libandroid-execinfo libelf python libucontext libandroid-shmem libandroid-posix-semaphore mesa-dev
+```
+
+
+# Building
+Some additional flags are required due to some differences between the Bionic libc and glibc/musl
+Assuming Darling was cloned into $HOME the cmake command needs to be changed.
+```
+cmake .. -DCMAKE_INSTALL_PREFIX=$PREFIX -DTARGET_i386=OFF -DX11_X11_INCLUDE_PATH=$PREFIX/include/X11
+
+make
+make install
+```
+
+# Running Darling
+Unlike, on a regular Linux install, currently, on Android, Darling must be run as root
+
+# Known Issues
+## setuid
+At the moment, setuid may not be functioning, if so Darling can only be run as root.
+If attempting to use Darling with setuid set to root, the dynamic linker may fail to find the necessary libraries to run.
+
+## /dev/shm
+Darling may fail to launch with an error:
+```
+Cannot mount new /dev/shm: No such file or directory
+```
+Run the following as root:
+```
+mkdir /dev/shm
+```
+
+## overlay
+Darling may fail to start with:
+```
+Cannot mount overlay: No such device
+```
+A fix is to run:
+```
+export DARLING_NOOVERLAYFS=1
+```
+Then run darling again

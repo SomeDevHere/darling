@@ -1,4 +1,5 @@
 project(mldr)
+include(darling_host_exe)
 
 cmake_minimum_required(VERSION 3.10)
 
@@ -23,7 +24,7 @@ set(mldr_sources
 	elfcalls/threads.c
 )
 
-add_executable(mldr ${mldr_sources})
+add_darling_host_executable(mldr ${mldr_sources})
 
 target_compile_options(mldr PRIVATE -pthread)
 target_link_options(mldr PRIVATE -pthread)
@@ -44,7 +45,7 @@ if (BUILD_TARGET_32BIT)
 	add_dependencies(mldr32_dserver_rpc rtsig_h)
 	target_include_directories(mldr32_dserver_rpc PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/..)
 
-	add_executable(mldr32 ${mldr_sources})
+	add_darling_host_executable(mldr32 ${mldr_sources})
 	target_compile_options(mldr32 PRIVATE -m32)
 	target_link_options(mldr32 PRIVATE -m32)
 	target_compile_options(mldr32 PRIVATE -pthread)
