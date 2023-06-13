@@ -148,10 +148,15 @@ int main(int argc, char ** argv)
 		// TODO: when we have a working launchd,
 		// this is where we ask it to shut down nicely
 
-		char path_buf[128];
 		FILE* file;
 		pid_t launchd_pid;
+#if defined(__ANDROID__)
+		char path_buf[4096];
+		snprintf(path_buf, sizeof(path_buf), "%s/.launchd.pid", prefix);
+#else
+		char path_buf[128];
 		snprintf(path_buf, sizeof(path_buf), "/proc/%d/task/%d/children", pidInit, pidInit);
+#endif
 		file = fopen(path_buf, "r");
 		if (!file || fscanf(file, "%d", &launchd_pid) != 1) {
 			fprintf(stderr, "Failed to shutdown Darling container\n");
